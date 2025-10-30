@@ -92,7 +92,20 @@ npm run dev:mcp
 - **MCP Server:** http://localhost:3001/tools
 - **MCP Health:** http://localhost:3001/health
 
-### 5. Test MCP Server (Phase 2)
+### 5. Set Up Environment Variables
+
+Before testing, copy `.env.example` to `.env` and add your OpenAI API key:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set your OpenAI API key:
+```env
+OPENAI_API_KEY=sk-your-actual-api-key-here
+```
+
+### 6. Test MCP Server (Phase 2)
 
 **List available tools:**
 ```bash
@@ -120,6 +133,35 @@ curl -s -X POST http://localhost:3001/tools/submit_reservation \
     "restaurantName": "イタリアンレストラン"
   }' \
   | jq .
+```
+
+### 7. Test Chat API (Phase 3)
+
+**Note:** Requires valid OpenAI API key in `.env`
+
+**Send a chat message:**
+```bash
+curl -s -X POST http://localhost:3000/api/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"レストランを予約したいです"}' \
+  | jq .
+```
+
+**Expected response includes UIResource for reservation form:**
+```json
+{
+  "success": true,
+  "conversationId": "conv_...",
+  "message": "フォームを表示しました",
+  "uiResource": {
+    "type": "resource",
+    "resource": {
+      "uri": "ui://reservation-form/...",
+      "mimeType": "text/html",
+      "text": "<!DOCTYPE html>..."
+    }
+  }
+}
 ```
 
 ## Project Structure
@@ -186,7 +228,7 @@ Each package (client, server, mcp-server) has its own scripts:
 - [x] Development environment ready
 - [x] MCP-UI SDK integration (@mcp-ui/client v5.14.1, @mcp-ui/server v5.13.1)
 
-### ✅ Phase 2: MCP Server Implementation (Current)
+### ✅ Phase 2: MCP Server Implementation
 - [x] Integrate @mcp-ui/server SDK
 - [x] Implement reservation form UI generation tool
 - [x] Implement submit_reservation tool
@@ -194,11 +236,13 @@ Each package (client, server, mcp-server) has its own scripts:
 - [x] REST API endpoints for tool execution
 - [x] Local testing complete
 
-### 🔜 Phase 3: Express Server Implementation
-- [ ] OpenAI Chat Completions API integration
-- [ ] Function calling implementation
-- [ ] MCP client integration
-- [ ] API endpoints for chat
+### ✅ Phase 3: Express Server Implementation (Current)
+- [x] OpenAI GPT-4 Turbo integration
+- [x] Function calling implementation for MCP tools
+- [x] MCP client for server-to-server communication
+- [x] Chat API endpoints (POST /api/chat, GET/DELETE)
+- [x] In-memory conversation management
+- [x] ES modules migration for server package
 
 ### 🔜 Phase 4: React Client Implementation
 - [ ] Chat UI components

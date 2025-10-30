@@ -1,4 +1,4 @@
-// Server types (to be expanded in Phase 3)
+// Server types for Phase 3
 
 export interface ChatRequest {
   message: string;
@@ -6,18 +6,31 @@ export interface ChatRequest {
 }
 
 export interface ChatResponse {
-  message: string;
-  conversationId: string;
-  uiResource?: any; // Will be properly typed with MCP-UI types
-}
-
-export interface ToolCallRequest {
-  toolName: string;
-  params: Record<string, any>;
-}
-
-export interface ToolCallResponse {
   success: boolean;
+  conversationId: string;
+  message: string;
+  uiResource?: any;
+  functionCall?: {
+    name: string;
+    arguments: any;
+  };
+  error?: string;
+}
+
+export interface ConversationHistoryResponse {
+  success: boolean;
+  conversationId: string;
+  messages: Array<{
+    role: string;
+    content: string;
+  }>;
+  error?: string;
+}
+
+export interface MCPToolResponse {
+  success: boolean;
+  message?: string;
   data?: any;
+  uiResource?: any;
   error?: string;
 }
