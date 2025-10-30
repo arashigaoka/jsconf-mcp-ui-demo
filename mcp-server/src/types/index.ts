@@ -1,28 +1,22 @@
-// MCP Server types (to be expanded in Phase 2)
+// MCP Server types for Phase 2
 
-export interface UIResource {
-  uri: string;
-  content: {
-    type: 'rawHtml' | 'remoteDom';
-    htmlString?: string;
-    url?: string;
-  };
-  encoding: 'text' | 'base64';
-}
-
-export interface ToolDefinition {
+export interface ReservationFormData {
   name: string;
-  description: string;
-  parameters: {
-    type: 'object';
-    properties: Record<string, any>;
-    required?: string[];
-  };
+  date: string;
+  time: string;
+  partySize: number;
+  contact: string;
+  restaurantName: string;
 }
 
-export interface ToolResult {
+export interface ToolRequest {
+  toolName: string;
+  params: Record<string, any>;
+}
+
+export interface ToolResponse {
   success: boolean;
+  message?: string;
   data?: any;
-  uiResource?: UIResource;
   error?: string;
 }

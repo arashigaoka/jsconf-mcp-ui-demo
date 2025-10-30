@@ -92,6 +92,36 @@ npm run dev:mcp
 - **MCP Server:** http://localhost:3001/tools
 - **MCP Health:** http://localhost:3001/health
 
+### 5. Test MCP Server (Phase 2)
+
+**List available tools:**
+```bash
+curl -s http://localhost:3001/tools | jq .
+```
+
+**Generate reservation form:**
+```bash
+curl -s -X POST http://localhost:3001/tools/show_reservation_form \
+  -H 'Content-Type: application/json' \
+  -d '{"restaurantName":"イタリアンレストラン"}' \
+  | jq .
+```
+
+**Submit reservation:**
+```bash
+curl -s -X POST http://localhost:3001/tools/submit_reservation \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "山田太郎",
+    "date": "2025-11-15",
+    "time": "19:00",
+    "partySize": 4,
+    "contact": "090-1234-5678",
+    "restaurantName": "イタリアンレストラン"
+  }' \
+  | jq .
+```
+
 ## Project Structure
 
 ```
@@ -148,18 +178,21 @@ Each package (client, server, mcp-server) has its own scripts:
 
 ## Development Roadmap
 
-### ✅ Phase 1: Project Setup (Current)
+### ✅ Phase 1: Project Setup
 - [x] Monorepo configuration with npm workspaces
 - [x] TypeScript configuration
 - [x] ESLint and Prettier setup
 - [x] Basic client, server, and mcp-server scaffolding
 - [x] Development environment ready
+- [x] MCP-UI SDK integration (@mcp-ui/client v5.14.1, @mcp-ui/server v5.13.1)
 
-### 🔜 Phase 2: MCP Server Implementation
-- [ ] Integrate @modelcontextprotocol/sdk
-- [ ] Implement form UI generation tool
-- [ ] Implement choice UI generation tool
-- [ ] Create UIResource generators
+### ✅ Phase 2: MCP Server Implementation (Current)
+- [x] Integrate @mcp-ui/server SDK
+- [x] Implement reservation form UI generation tool
+- [x] Implement submit_reservation tool
+- [x] Create UIResource generators with rawHtml
+- [x] REST API endpoints for tool execution
+- [x] Local testing complete
 
 ### 🔜 Phase 3: Express Server Implementation
 - [ ] OpenAI Chat Completions API integration
