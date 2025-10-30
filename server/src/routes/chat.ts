@@ -18,13 +18,16 @@ router.post('/chat', async (req: Request, res: Response) => {
   try {
     const { message, conversationId } = req.body;
 
-    if (!message) {
+    // Validate and trim input
+    if (!message || !message.trim()) {
       res.status(400).json({
         success: false,
         error: 'Message is required',
       });
       return;
     }
+
+    const trimmedMessage = message.trim();
 
     // Get or create conversation
     const convId = conversationId || generateConversationId();
@@ -38,7 +41,7 @@ router.post('/chat', async (req: Request, res: Response) => {
     // Add user message
     messages.push({
       role: 'user',
-      content: message,
+      content: trimmedMessage,
     });
 
     // Process with OpenAI
