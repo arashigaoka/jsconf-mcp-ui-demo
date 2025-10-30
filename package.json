@@ -1,0 +1,41 @@
+{
+  "name": "jsconf-mcp-ui-demo",
+  "version": "1.0.0",
+  "description": "Interactive chat demo using MCP-UI protocol",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "mcp-server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w client\" \"npm run dev -w server\" \"npm run dev -w mcp-server\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "dev:mcp": "npm run dev -w mcp-server",
+    "build": "npm run build --workspaces",
+    "build:client": "npm run build -w client",
+    "build:server": "npm run build -w server",
+    "build:mcp": "npm run build -w mcp-server",
+    "clean": "rm -rf node_modules client/node_modules server/node_modules mcp-server/node_modules shared/node_modules",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
