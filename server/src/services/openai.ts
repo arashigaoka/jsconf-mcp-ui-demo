@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import config from '../config/index.js';
 import { mcpClient } from './mcpClient.js';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import type { EmbeddedResource } from '@modelcontextprotocol/sdk/types.js';
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -13,16 +14,17 @@ const functions: OpenAI.Chat.Completions.ChatCompletionCreateParams.Function[] =
     {
       name: 'show_reservation_form',
       description:
-        'ユーザーがレストランを予約したい時に、予約フォームを表示します',
+        'ユーザーがレストランを予約したい時に、予約フォームを表示します。レストラン名が不明な場合は「レストラン」をデフォルトで使用してください。',
       parameters: {
         type: 'object',
         properties: {
           restaurantName: {
             type: 'string',
-            description: 'レストランの名前',
+            description: 'レストランの名前（不明な場合は「レストラン」）',
+            default: 'レストラン',
           },
         },
-        required: ['restaurantName'],
+        required: [],
       },
     },
     {
@@ -80,10 +82,10 @@ export interface ChatMessage {
 
 export interface ChatResponse {
   message: string;
-  uiResource?: any;
+  uiResource?: EmbeddedResource;
   functionCall?: {
     name: string;
-    arguments: any;
+    arguments: Record<string, unknown>;
   };
 }
 
@@ -169,7 +171,8 @@ export function createSystemMessage(): ChatMessage {
   return {
     role: 'system',
     content: `あなたはレストラン予約を手伝うアシスタントです。
-ユーザーがレストランを予約したいと言ったら、show_reservation_form関数を使ってフォームを表示してください。
+ユーザーがレストランや食事の予約について話したら、すぐにshow_reservation_form関数を呼び出してフォームを表示してください。
+レストラン名が不明な場合でも、フォームを表示してください。
 フォームが送信されたら、submit_reservation関数で予約を処理してください。
 親切で丁寧な対応を心がけてください。`,
   };

@@ -189,7 +189,7 @@ export function createReservationForm(restaurantName: string): UIResource {
     </html>
   `;
 
-  return createUIResource({
+  const resource = createUIResource({
     uri: `ui://reservation-form/${Date.now()}`,
     content: {
       type: 'rawHtml',
@@ -197,6 +197,16 @@ export function createReservationForm(restaurantName: string): UIResource {
     },
     encoding: 'text',
   });
+
+  // Add annotations to specify content type for UIResourceRenderer
+  if (resource && typeof resource === 'object') {
+    (resource as any).annotations = {
+      audience: ['user'],
+      priority: 1,
+    };
+  }
+
+  return resource;
 }
 
 /**

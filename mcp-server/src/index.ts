@@ -34,10 +34,11 @@ app.get('/tools', (_req: Request, res: Response) => {
           properties: {
             restaurantName: {
               type: 'string',
-              description: 'Name of the restaurant',
+              description: 'Name of the restaurant (defaults to "レストラン" if not provided)',
+              default: 'レストラン',
             },
           },
-          required: ['restaurantName'],
+          required: [],
         },
       },
       {
@@ -63,15 +64,7 @@ app.get('/tools', (_req: Request, res: Response) => {
 // Tool execution endpoint
 app.post('/tools/show_reservation_form', (req: Request, res: Response) => {
   try {
-    const { restaurantName } = req.body;
-
-    if (!restaurantName) {
-      res.status(400).json({
-        success: false,
-        error: 'restaurantName is required',
-      } as ToolResponse);
-      return;
-    }
+    const { restaurantName = 'レストラン' } = req.body;
 
     const uiResource = createReservationForm(restaurantName as string);
 
