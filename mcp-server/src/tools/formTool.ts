@@ -2,9 +2,26 @@ import { createUIResource, type UIResource } from '@mcp-ui/server';
 import type { ReservationFormData } from '../types/index.js';
 
 /**
+ * Escapes HTML to prevent XSS attacks
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Creates a UIResource for restaurant reservation form
  */
 export function createReservationForm(restaurantName: string): UIResource {
+  // Sanitize restaurantName to prevent XSS
+  const safeRestaurantName = escapeHtml(restaurantName);
+  // JSON-stringify for safe embedding in JavaScript
+  const jsonSafeRestaurantName = JSON.stringify(restaurantName);
+
   const htmlString = `
     <!DOCTYPE html>
     <html lang="ja">
@@ -113,7 +130,7 @@ export function createReservationForm(restaurantName: string): UIResource {
       </head>
       <body>
         <div class="container">
-          <h2><span class="restaurant-name">${restaurantName}</span> の予約</h2>
+          <h2><span class="restaurant-name">${safeRestaurantName}</span> の予約</h2>
           <p class="subtitle">以下のフォームにご記入ください</p>
 
           <form id="reservationForm">
@@ -168,7 +185,7 @@ export function createReservationForm(restaurantName: string): UIResource {
               time: formData.get('time'),
               partySize: parseInt(formData.get('partySize')),
               contact: formData.get('contact'),
-              restaurantName: '${restaurantName}'
+              restaurantName: ${jsonSafeRestaurantName}
             };
 
             // postMessageでホストに送信

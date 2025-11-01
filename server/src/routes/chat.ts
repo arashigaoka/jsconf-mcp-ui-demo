@@ -70,8 +70,16 @@ router.post('/chat', async (req: Request, res: Response) => {
   try {
     const { message, conversationId } = req.body;
 
-    // Validate and trim input
-    if (!message || !message.trim()) {
+    // Validate input type and content
+    if (typeof message !== 'string') {
+      res.status(400).json({
+        success: false,
+        error: 'Message must be a string',
+      });
+      return;
+    }
+
+    if (!message.trim()) {
       res.status(400).json({
         success: false,
         error: 'Message is required',

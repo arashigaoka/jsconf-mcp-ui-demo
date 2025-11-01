@@ -32,8 +32,12 @@ export function UIResourceMessage({ resource, onToolCall }: UIResourceMessagePro
   useEffect(() => {
     // Listen for postMessage from iframe
     const handleMessage = (event: MessageEvent) => {
-      // Security: Validate origin
-      if (event.origin !== window.location.origin) {
+      // Security: Validate that message comes from our iframe (null origin for sandboxed iframes without allow-same-origin)
+      // Note: When sandbox doesn't include allow-same-origin, the origin is 'null'
+      const isSandboxedIframe = event.origin === 'null';
+      const isSameOrigin = event.origin === window.location.origin;
+
+      if (!isSandboxedIframe && !isSameOrigin) {
         console.warn('Rejected postMessage from untrusted origin:', event.origin);
         return;
       }
@@ -64,7 +68,7 @@ export function UIResourceMessage({ resource, onToolCall }: UIResourceMessagePro
           ref={iframeRef}
           srcDoc={htmlContent}
           style={styles.iframe}
-          sandbox="allow-scripts allow-forms allow-same-origin"
+          sandbox="allow-scripts allow-forms"
           title="UI Resource"
         />
       </div>
