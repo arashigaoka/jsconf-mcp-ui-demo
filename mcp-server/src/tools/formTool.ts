@@ -61,6 +61,28 @@ export function createReservationForm(restaurantName: string): UIResource {
     // Form
     const form = document.createElement('ui-form');
 
+    // Error message container
+    const errorContainer = document.createElement('ui-text');
+    errorContainer.setAttribute('color', '#e53e3e');
+    errorContainer.setAttribute('fontSize', '14px');
+    errorContainer.setAttribute('fontWeight', '500');
+    errorContainer.style.display = 'none';
+    errorContainer.style.padding = '12px';
+    errorContainer.style.backgroundColor = '#fff5f5';
+    errorContainer.style.border = '1px solid #feb2b2';
+    errorContainer.style.borderRadius = '8px';
+    errorContainer.style.marginBottom = '16px';
+
+    function showError(message) {
+      errorContainer.setAttribute('content', '⚠️ ' + message);
+      errorContainer.style.display = 'block';
+      setTimeout(() => {
+        errorContainer.style.display = 'none';
+      }, 5000);
+    }
+
+    container.appendChild(errorContainer);
+
     // Form fields stack
     const fieldsStack = document.createElement('ui-stack');
     fieldsStack.setAttribute('direction', 'vertical');
@@ -150,7 +172,7 @@ export function createReservationForm(restaurantName: string): UIResource {
       // Validate and parse partySize
       const parsedPartySize = parseInt(formState.partySize);
       if (isNaN(parsedPartySize) || parsedPartySize < 1) {
-        alert('人数を選択してください');
+        showError('人数を選択してください');
         return;
       }
 
@@ -173,7 +195,7 @@ export function createReservationForm(restaurantName: string): UIResource {
       if (!formData.contact) missingFields.push('連絡先');
 
       if (missingFields.length > 0) {
-        alert('以下の項目を入力してください: ' + missingFields.join(', '));
+        showError('以下の項目を入力してください: ' + missingFields.join(', '));
         return;
       }
 
@@ -183,18 +205,18 @@ export function createReservationForm(restaurantName: string): UIResource {
       today.setHours(0, 0, 0, 0);
 
       if (isNaN(dateObj.getTime())) {
-        alert('有効な日付を入力してください');
+        showError('有効な日付を入力してください');
         return;
       }
 
       if (dateObj < today) {
-        alert('過去の日付は選択できません');
+        showError('過去の日付は選択できません');
         return;
       }
 
       const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
       if (dateObj > oneYearFromNow) {
-        alert('予約は1年先まで可能です');
+        showError('予約は1年先まで可能です');
         return;
       }
 
@@ -207,7 +229,7 @@ export function createReservationForm(restaurantName: string): UIResource {
       const isPhone = phoneRegex.test(contactValue) && contactValue.replace(/\\D/g, '').length >= 10;
 
       if (!isEmail && !isPhone) {
-        alert('連絡先には有効な電話番号（10桁以上）またはメールアドレスを入力してください');
+        showError('連絡先には有効な電話番号（10桁以上）またはメールアドレスを入力してください');
         return;
       }
 
