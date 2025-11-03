@@ -4,6 +4,7 @@ import {
   createSystemMessage,
   type ChatMessage,
 } from '../services/openai.js';
+import { mcpClient, type ReservationData } from '../services/mcpClient.js';
 
 const router = Router();
 
@@ -189,6 +190,106 @@ router.delete('/chat/:conversationId', (req: Request, res: Response) => {
     success: true,
     message: 'Conversation deleted',
   });
+});
+
+/**
+ * POST /api/tool-call
+ * Handle tool calls from UIResource
+ */
+router.post('/tool-call', async (req: Request, res: Response) => {
+  try {
+    const { toolName, params, conversationId } = req.body;
+
+    // Whitelist of allowed tool names
+    const ALLOWED_TOOLS = ['submit_reservation', 'show_reservation_form'];
+
+    // Validate input
+    if (typeof toolName !== 'string' || !toolName.trim()) {
+      res.status(400).json({
+        success: false,
+        error: 'toolName is required and must be a string',
+      });
+      return;
+    }
+
+    // Whitelist validation
+    if (!ALLOWED_TOOLS.includes(toolName)) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid tool name',
+      });
+      return;
+    }
+
+    if (!params || typeof params !== 'object' || Array.isArray(params)) {
+      res.status(400).json({
+        success: false,
+        error: 'params is required and must be an object',
+      });
+      return;
+    }
+
+    // Call the appropriate tool via MCP client
+    let result;
+    if (toolName === 'submit_reservation') {
+      result = await mcpClient.submitReservation(params as ReservationData);
+    } else {
+      result = await mcpClient.callTool(toolName, params);
+    }
+
+    // Get conversation and add the result as a message
+    if (conversationId) {
+      const conversationData = conversations.get(conversationId);
+      if (conversationData) {
+        const messages = conversationData.messages;
+
+        // Add tool result as user message
+        const toolResultMessage = result.message || JSON.stringify(result.data || {});
+        messages.push({
+          role: 'user',
+          content: `[Tool Result: ${toolName}]\n${toolResultMessage}`,
+        });
+
+        // Process with OpenAI to get a natural language response
+        const response = await processChat(messages);
+
+        // Add assistant response
+        messages.push({
+          role: 'assistant',
+          content: response.message,
+        });
+
+        // Update conversation
+        conversations.set(conversationId, {
+          messages,
+          lastAccessedAt: Date.now(),
+        });
+
+        // Return both the tool result and AI response
+        res.json({
+          success: true,
+          conversationId,
+          toolResult: result,
+          message: response.message,
+          uiResource: response.uiResource,
+        });
+        return;
+      }
+    }
+
+    // If no conversation context, just return the tool result
+    res.json({
+      success: true,
+      toolResult: result,
+      message: result.message || 'ツール呼び出しが成功しました',
+    });
+  } catch (error) {
+    console.error('[Server] Error in /api/tool-call:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 /**

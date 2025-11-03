@@ -1,7 +1,32 @@
-import { UIResourceRenderer, type UIActionResult } from '@mcp-ui/client';
+import {
+  UIResourceRenderer,
+  type UIActionResult,
+  remoteTextDefinition,
+  remoteStackDefinition,
+  remoteImageDefinition,
+} from '@mcp-ui/client';
 import type { EmbeddedResource } from '@modelcontextprotocol/sdk/types.js';
 import type { UIToolCall } from '../types/chat';
-import { useEffect, useRef } from 'react';
+import { radixComponentLibrary } from '../libraries/radix';
+import {
+  remoteButtonDefinition,
+  remoteTextInputDefinition,
+  remoteSelectDefinition,
+  remoteFormDefinition,
+  remoteSeparatorDefinition,
+} from '../libraries/remoteElements';
+import { useState, useRef, useEffect } from 'react';
+
+const remoteElements = [
+  remoteTextDefinition,
+  remoteButtonDefinition,  // Using custom definition with type attribute
+  remoteStackDefinition,
+  remoteImageDefinition,
+  remoteTextInputDefinition,
+  remoteSelectDefinition,
+  remoteFormDefinition,
+  remoteSeparatorDefinition,
+];
 
 interface UIResourceMessageProps {
   resource: EmbeddedResource;
@@ -9,78 +34,98 @@ interface UIResourceMessageProps {
 }
 
 export function UIResourceMessage({ resource, onToolCall }: UIResourceMessageProps) {
-  if (import.meta.env.DEV) {
-    console.log('UIResourceMessage received resource:', resource);
-  }
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleUIAction = async (result: UIActionResult): Promise<void> => {
-    if (import.meta.env.DEV) {
-      console.log('UI Action received:', result);
-    }
-
-    // Handle tool calls from the UI
-    if (result.type === 'tool') {
-      const payload = result.payload;
-      onToolCall({
-        toolName: payload.toolName,
-        params: payload.params,
-      });
-    }
-  };
-
+  // Cleanup timeout on unmount
   useEffect(() => {
-    // Listen for postMessage from iframe
-    const handleMessage = (event: MessageEvent) => {
-      // Security: Validate that message comes from our iframe (null origin for sandboxed iframes without allow-same-origin)
-      // Note: When sandbox doesn't include allow-same-origin, the origin is 'null'
-      const isSandboxedIframe = event.origin === 'null';
-      const isSameOrigin = event.origin === window.location.origin;
-
-      if (!isSandboxedIframe && !isSameOrigin) {
-        console.warn('Rejected postMessage from untrusted origin:', event.origin);
-        return;
-      }
-
-      if (import.meta.env.DEV) {
-        console.log('Received postMessage:', event.data);
-      }
-
-      if (event.data && event.data.type === 'tool') {
-        onToolCall({
-          toolName: event.data.payload.toolName,
-          params: event.data.payload.params,
-        });
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
       }
     };
+  }, []);
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [onToolCall]);
-
-  // Render HTML directly in iframe
-  if (resource.type === 'resource' && resource.resource && 'text' in resource.resource) {
-    const htmlContent = resource.resource.text as string;
-
+  // Validate resource structure: expecting {type: 'resource', resource: {mimeType, text, ...}}
+  if (!resource || typeof resource !== 'object') {
+    console.error('Invalid resource: not an object:', resource);
     return (
       <div style={styles.container}>
-        <iframe
-          ref={iframeRef}
-          srcDoc={htmlContent}
-          style={styles.iframe}
-          sandbox="allow-scripts allow-forms"
-          title="UI Resource"
-        />
+        <div style={styles.error}>
+          <span style={styles.errorIcon}>⚠️</span>
+          <span>Invalid UI resource structure</span>
+        </div>
       </div>
     );
   }
 
-  // Fallback to UIResourceRenderer
+  if (resource.type !== 'resource' || !resource.resource) {
+    console.error('Invalid resource: missing type or resource field:', resource);
+    return (
+      <div style={styles.container}>
+        <div style={styles.error}>
+          <span style={styles.errorIcon}>⚠️</span>
+          <span>Invalid UI resource format</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Extract the actual resource object to pass to UIResourceRenderer
+  const actualResource = resource.resource;
+
+  const handleUIAction = async (result: UIActionResult): Promise<void> => {
+    try {
+      // Handle tool calls from the UI
+      if (result.type === 'tool') {
+        const payload = result.payload;
+
+        // Validate payload
+        if (!payload || !payload.toolName || !payload.params) {
+          console.error('Invalid tool call payload:', payload);
+          setError('操作データが不正です');
+
+          // Clear previous timeout
+          if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+          }
+          errorTimeoutRef.current = setTimeout(() => setError(null), 5000);
+          return;
+        }
+
+        onToolCall({
+          toolName: payload.toolName,
+          params: payload.params,
+        });
+      }
+    } catch (error) {
+      console.error('Error handling UI action:', error);
+      setError('操作中にエラーが発生しました。もう一度お試しください。');
+
+      // Clear previous timeout
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+      errorTimeoutRef.current = setTimeout(() => setError(null), 5000);
+    }
+  };
+
   return (
     <div style={styles.container}>
+      {error && (
+        <div style={styles.error}>
+          <span style={styles.errorIcon}>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
       <UIResourceRenderer
-        resource={resource}
+        resource={actualResource}
         onUIAction={handleUIAction}
+        supportedContentTypes={['remoteDom', 'html', 'externalUrl']}
+        remoteDomProps={{
+          library: radixComponentLibrary,
+          remoteElements: remoteElements,
+        }}
       />
     </div>
   );
@@ -90,15 +135,23 @@ const styles = {
   container: {
     width: '100%',
     minHeight: '200px',
+    padding: '24px',
     border: '1px solid #e0e0e0',
     borderRadius: '8px',
     overflow: 'hidden',
     backgroundColor: 'white',
   } as React.CSSProperties,
-  iframe: {
-    width: '100%',
-    minHeight: '500px',
-    border: 'none',
+  error: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '16px',
+    backgroundColor: '#fff3cd',
+    border: '1px solid #ffc107',
     borderRadius: '8px',
+    color: '#856404',
+  } as React.CSSProperties,
+  errorIcon: {
+    fontSize: '20px',
   } as React.CSSProperties,
 };

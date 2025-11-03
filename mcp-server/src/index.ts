@@ -66,6 +66,7 @@ app.post('/tools/show_reservation_form', (req: Request, res: Response) => {
   try {
     const { restaurantName = 'レストラン' } = req.body;
 
+    // createUIResource already returns an EmbeddedResource format
     const uiResource = createReservationForm(restaurantName as string);
 
     res.json({
