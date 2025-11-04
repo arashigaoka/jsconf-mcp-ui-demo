@@ -1,6 +1,7 @@
 import { useChat } from '../hooks/useChat';
 import { MessageList } from './MessageList';
 import { InputArea } from './InputArea';
+import * as Separator from '@radix-ui/react-separator';
 
 export function ChatUI() {
   const { messages, isLoading, error, sendMessage, handleToolCall, clearConversation } = useChat();
@@ -14,11 +15,21 @@ export function ChatUI() {
           <p style={styles.subtitle}>Interactive chat with Model Context Protocol</p>
         </div>
         {messages.length > 0 && (
-          <button onClick={clearConversation} style={styles.clearButton}>
+          <button
+            onClick={clearConversation}
+            style={styles.clearButton}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#e9ecef';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#f8f9fa';
+            }}
+          >
             Clear Chat
           </button>
         )}
       </div>
+      <Separator.Root style={styles.separator} />
 
       {/* Error display */}
       {error && (
@@ -39,6 +50,8 @@ export function ChatUI() {
 
       {/* Input area */}
       <InputArea onSend={sendMessage} disabled={isLoading} />
+
+      <Separator.Root style={styles.separator} />
 
       {/* Footer */}
       <div style={styles.footer}>
@@ -65,27 +78,31 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '20px 24px',
-    borderBottom: '2px solid #007bff',
     backgroundColor: '#fff',
   } as React.CSSProperties,
   title: {
     margin: '0 0 4px 0',
     fontSize: '28px',
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1a202c',
   } as React.CSSProperties,
   subtitle: {
     margin: '0',
     fontSize: '14px',
-    color: '#666',
+    color: '#718096',
+  } as React.CSSProperties,
+  separator: {
+    height: '1px',
+    backgroundColor: '#e2e8f0',
   } as React.CSSProperties,
   clearButton: {
-    padding: '8px 16px',
+    padding: '10px 20px',
     backgroundColor: '#f8f9fa',
-    color: '#666',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
+    color: '#2d3748',
+    border: '1px solid #e2e8f0',
+    borderRadius: '8px',
     fontSize: '14px',
+    fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s',
   } as React.CSSProperties,
@@ -109,12 +126,11 @@ const styles = {
   } as React.CSSProperties,
   footer: {
     padding: '12px 24px',
-    borderTop: '1px solid #e0e0e0',
     backgroundColor: '#f8f9fa',
     textAlign: 'center' as const,
   } as React.CSSProperties,
   footerText: {
     fontSize: '12px',
-    color: '#999',
+    color: '#718096',
   } as React.CSSProperties,
 };
