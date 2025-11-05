@@ -18,5 +18,11 @@ export interface ToolResponse {
   success: boolean;
   message?: string;
   data?: any;
+  uiResource?: any;
   error?: string;
+}
+
+export interface AllergyInquiryData {
+  allergyInfo: string;
+  restaurantName: string;
 }

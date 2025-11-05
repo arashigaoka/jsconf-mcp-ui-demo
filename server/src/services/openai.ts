@@ -68,6 +68,52 @@ const functions: OpenAI.Chat.Completions.ChatCompletionCreateParams.Function[] =
         ],
       },
     },
+    {
+      name: 'ask_allergy',
+      description: 'ユーザーがアレルギーについて確認したい時に、アレルギー問い合わせフォームを表示します。',
+      parameters: {
+        type: 'object',
+        properties: {
+          restaurantName: {
+            type: 'string',
+            description: 'レストランの名前',
+          },
+        },
+        required: ['restaurantName'],
+      },
+    },
+    {
+      name: 'ask_private_room',
+      description: 'ユーザーが個室について確認したい時に、個室に関する情報を表示します。',
+      parameters: {
+        type: 'object',
+        properties: {
+          restaurantName: {
+            type: 'string',
+            description: 'レストランの名前',
+          },
+        },
+        required: ['restaurantName'],
+      },
+    },
+    {
+      name: 'submit_allergy_inquiry',
+      description: 'アレルギー問い合わせを送信します',
+      parameters: {
+        type: 'object',
+        properties: {
+          allergyInfo: {
+            type: 'string',
+            description: 'アレルギー情報（例: 小麦アレルギー）',
+          },
+          restaurantName: {
+            type: 'string',
+            description: 'レストランの名前',
+          },
+        },
+        required: ['allergyInfo', 'restaurantName'],
+      },
+    },
   ];
 
 export interface ChatMessage {
@@ -171,9 +217,8 @@ export function createSystemMessage(): ChatMessage {
   return {
     role: 'system',
     content: `あなたはレストラン予約を手伝うアシスタントです。
-ユーザーがレストランや食事の予約について話したら、すぐにshow_reservation_form関数を呼び出してフォームを表示してください。
-レストラン名が不明な場合でも、フォームを表示してください。
-フォームが送信されたら、submit_reservation関数で予約を処理してください。
+ユーザーがレストランや食事の予約について話したら、すぐに予約フォームを表示してください。
+予約が完了したら、ユーザーが他に確認したいことがないか尋ねてください。
 親切で丁寧な対応を心がけてください。`,
   };
 }

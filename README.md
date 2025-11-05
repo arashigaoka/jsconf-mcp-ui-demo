@@ -270,6 +270,75 @@ User requests to make a reservation → LLM displays interactive form → User f
 ### 2. Choice Selection
 User asks for recommendations → LLM displays choice buttons → User selects option → Conversation continues
 
+## レストラン予約デモの処理フロー
+
+以下の図は、レストラン予約デモの完全な処理フローを示しています：
+
+```mermaid
+sequenceDiagram
+    participant User as ユーザー
+    participant Client as クライアント<br/>(React)
+    participant Server as Expressサーバー
+    participant OpenAI as OpenAI API
+    participant MCPServer as MCPサーバー
+
+    User->>Client: 「レストランを予約したい」
+    Client->>Server: POST /api/chat
+    Server->>OpenAI: Chat completion with function calling
+    OpenAI->>Server: Function call: show_reservation_form
+    Server->>MCPServer: POST /tools/show_reservation_form
+    MCPServer->>Server: UIResource (予約フォーム)
+    Server->>Client: Response with UIResource
+    Client->>User: 予約フォームUI表示<br/>(店名, 名前, 日付, 時間, 人数, 連絡先)
+
+    User->>Client: フォーム入力 → 送信
+    Client->>Server: POST /api/tool-call<br/>(submit_reservation)
+    Server->>MCPServer: POST /tools/submit_reservation
+    MCPServer->>Server: UIResource (予約完了パネル)
+    Server->>OpenAI: Process tool result
+    OpenAI->>Server: Response message
+    Server->>Client: Response with UIResource
+    Client->>User: 予約完了パネルUI表示<br/>「予約しました。他に確認したいことはありますか？」<br/>[アレルギーについて] [個室ですか]
+
+    User->>Client: 「アレルギーについて」ボタンクリック
+    Client->>Server: POST /api/tool-call<br/>(ask_allergy)
+    Server->>MCPServer: POST /tools/ask_allergy
+    MCPServer->>Server: UIResource (アレルギー問い合わせフォーム)
+    Server->>OpenAI: Process tool result
+    OpenAI->>Server: Response message
+    Server->>Client: Response with UIResource
+    Client->>User: アレルギー問い合わせフォームUI表示
+
+    User->>Client: 「小麦アレルギー」入力 → 送信
+    Client->>Server: POST /api/tool-call<br/>(submit_allergy_inquiry)
+    Server->>MCPServer: POST /tools/submit_allergy_inquiry
+    MCPServer->>Server: UIResource (最終メッセージ)
+    Server->>OpenAI: Process tool result
+    OpenAI->>Server: Response message
+    Server->>Client: Response with UIResource
+    Client->>User: 最終メッセージUI表示<br/>「✓ アレルギー情報を承知いたしました」
+```
+
+### 処理フローの詳細
+
+1. **予約フォーム表示**
+   - ユーザーが「レストランを予約したい」と入力
+   - LLMが`show_reservation_form`関数を呼び出し
+   - 予約フォームUIが表示される（店名、名前、日付、時間、人数、連絡先）
+
+2. **予約送信と完了パネル表示**
+   - ユーザーがフォームに入力して送信
+   - `submit_reservation`が呼び出され、予約が処理される
+   - 予約完了パネルが表示され、関連アクションボタンが表示される
+
+3. **アレルギー問い合わせ**
+   - 「アレルギーについて」ボタンをクリック
+   - `ask_allergy`が呼び出され、アレルギー問い合わせフォームが表示される
+
+4. **アレルギー情報送信と最終メッセージ**
+   - 「小麦アレルギー」を入力して送信
+   - `submit_allergy_inquiry`が呼び出され、最終メッセージUIが表示される
+
 ## Environment Variables
 
 | Variable | Description | Default |

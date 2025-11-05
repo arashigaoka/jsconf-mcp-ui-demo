@@ -4,7 +4,7 @@ import {
   createSystemMessage,
   type ChatMessage,
 } from '../services/openai.js';
-import { mcpClient, type ReservationData } from '../services/mcpClient.js';
+import { mcpClient } from '../services/mcpClient.js';
 
 const router = Router();
 
@@ -201,7 +201,13 @@ router.post('/tool-call', async (req: Request, res: Response) => {
     const { toolName, params, conversationId } = req.body;
 
     // Whitelist of allowed tool names
-    const ALLOWED_TOOLS = ['submit_reservation', 'show_reservation_form'];
+    const ALLOWED_TOOLS = [
+      'submit_reservation',
+      'show_reservation_form',
+      'ask_allergy',
+      'ask_private_room',
+      'submit_allergy_inquiry',
+    ];
 
     // Validate input
     if (typeof toolName !== 'string' || !toolName.trim()) {
@@ -231,10 +237,22 @@ router.post('/tool-call', async (req: Request, res: Response) => {
 
     // Call the appropriate tool via MCP client
     let result;
-    if (toolName === 'submit_reservation') {
-      result = await mcpClient.submitReservation(params as ReservationData);
-    } else {
+    try {
       result = await mcpClient.callTool(toolName, params);
+    } catch (error) {
+      console.error(`[Server] Error calling MCP tool ${toolName}:`, error);
+      
+      // Return user-friendly error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'ツールの呼び出しに失敗しました';
+      
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+        toolName,
+      });
+      return;
     }
 
     // Get conversation and add the result as a message
@@ -266,12 +284,13 @@ router.post('/tool-call', async (req: Request, res: Response) => {
         });
 
         // Return both the tool result and AI response
+        // Prioritize uiResource from tool result over OpenAI response
         res.json({
           success: true,
           conversationId,
           toolResult: result,
           message: response.message,
-          uiResource: response.uiResource,
+          uiResource: result.uiResource || response.uiResource,
         });
         return;
       }
@@ -282,6 +301,7 @@ router.post('/tool-call', async (req: Request, res: Response) => {
       success: true,
       toolResult: result,
       message: result.message || 'ツール呼び出しが成功しました',
+      uiResource: result.uiResource,
     });
   } catch (error) {
     console.error('[Server] Error in /api/tool-call:', error);
