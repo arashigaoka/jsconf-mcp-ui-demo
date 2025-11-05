@@ -1,7 +1,13 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import { createReservationForm, handleReservationSubmit } from './tools/formTool.js';
-import type { ReservationFormData, ToolResponse } from './types/index.js';
+import {
+  createReservationForm,
+  handleReservationSubmit,
+  createAllergyInquiryForm,
+  handleAllergyInquirySubmit,
+  handlePrivateRoomInquiry,
+} from './tools/formTool.js';
+import type { ReservationFormData, AllergyInquiryData, ToolResponse } from './types/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -57,6 +63,46 @@ app.get('/tools', (_req: Request, res: Response) => {
           required: ['name', 'date', 'time', 'partySize', 'contact', 'restaurantName'],
         },
       },
+      {
+        name: 'ask_allergy',
+        description: 'Display allergy inquiry form',
+        parameters: {
+          type: 'object',
+          properties: {
+            restaurantName: {
+              type: 'string',
+              description: 'Name of the restaurant',
+            },
+          },
+          required: ['restaurantName'],
+        },
+      },
+      {
+        name: 'ask_private_room',
+        description: 'Show information about private rooms',
+        parameters: {
+          type: 'object',
+          properties: {
+            restaurantName: {
+              type: 'string',
+              description: 'Name of the restaurant',
+            },
+          },
+          required: ['restaurantName'],
+        },
+      },
+      {
+        name: 'submit_allergy_inquiry',
+        description: 'Submit allergy inquiry',
+        parameters: {
+          type: 'object',
+          properties: {
+            allergyInfo: { type: 'string', description: 'Allergy information' },
+            restaurantName: { type: 'string', description: 'Restaurant name' },
+          },
+          required: ['allergyInfo', 'restaurantName'],
+        },
+      },
     ],
   });
 });
@@ -107,9 +153,83 @@ app.post('/tools/submit_reservation', (req: Request, res: Response) => {
 
     const result = handleReservationSubmit(formData);
 
-    res.json(result);
+    // Ensure uiResource is included in the response
+    const response: ToolResponse = {
+      success: result.success,
+      message: result.message,
+      data: result.data,
+      uiResource: result.uiResource,
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error in submit_reservation:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    } as ToolResponse);
+  }
+});
+
+app.post('/tools/ask_allergy', (req: Request, res: Response) => {
+  try {
+    const { restaurantName = 'レストラン' } = req.body;
+
+    const uiResource = createAllergyInquiryForm(restaurantName as string);
+
+    res.json({
+      success: true,
+      message: 'アレルギー問い合わせフォームを表示しました',
+      uiResource,
+    });
+  } catch (error) {
+    console.error('Error in ask_allergy:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    } as ToolResponse);
+  }
+});
+
+app.post('/tools/ask_private_room', (req: Request, res: Response) => {
+  try {
+    const { restaurantName = 'レストラン' } = req.body;
+
+    const result = handlePrivateRoomInquiry(restaurantName as string);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error in ask_private_room:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    } as ToolResponse);
+  }
+});
+
+app.post('/tools/submit_allergy_inquiry', (req: Request, res: Response) => {
+  try {
+    const { allergyInfo, restaurantName } = req.body;
+
+    // Validate required fields
+    if (!allergyInfo || !restaurantName) {
+      res.status(400).json({
+        success: false,
+        error: 'All fields are required',
+      } as ToolResponse);
+      return;
+    }
+
+    const formData: AllergyInquiryData = {
+      allergyInfo,
+      restaurantName,
+    };
+
+    const result = handleAllergyInquirySubmit(formData);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error in submit_allergy_inquiry:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -135,6 +255,24 @@ app.post('/tools/:toolName', (req: Request, res: Response) => {
       res,
       () => {}
     );
+  } else if (toolName === 'ask_allergy') {
+    return app._router.handle(
+      Object.assign(req, { url: '/tools/ask_allergy', method: 'POST' }),
+      res,
+      () => {}
+    );
+  } else if (toolName === 'ask_private_room') {
+    return app._router.handle(
+      Object.assign(req, { url: '/tools/ask_private_room', method: 'POST' }),
+      res,
+      () => {}
+    );
+  } else if (toolName === 'submit_allergy_inquiry') {
+    return app._router.handle(
+      Object.assign(req, { url: '/tools/submit_allergy_inquiry', method: 'POST' }),
+      res,
+      () => {}
+    );
   }
 
   res.status(404).json({
@@ -151,4 +289,7 @@ app.listen(PORT, () => {
   console.log(`\n✨ Available tools:`);
   console.log(`   - show_reservation_form: Display restaurant reservation form`);
   console.log(`   - submit_reservation: Submit reservation data`);
+  console.log(`   - ask_allergy: Display allergy inquiry form`);
+  console.log(`   - ask_private_room: Show information about private rooms`);
+  console.log(`   - submit_allergy_inquiry: Submit allergy inquiry`);
 });
