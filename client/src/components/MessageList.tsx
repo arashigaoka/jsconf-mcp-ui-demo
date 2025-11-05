@@ -26,7 +26,7 @@ export function MessageList({ messages, isLoading = false, onToolCall }: Message
           <div style={styles.emptyIcon}>💬</div>
           <h3 style={styles.emptyTitle}>Start a conversation</h3>
           <p style={styles.emptyText}>
-            Try saying "こんにちは" or "レストランを予約したい"
+            Try saying "レストランを予約したい"
           </p>
         </div>
       ) : (
